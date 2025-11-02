@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>[translate:Pastillero]</title>
+<title>Pastillero</title>
 <style>
   body { font-family: Arial, sans-serif; padding: 10px 12px; background: #f9f9f9; max-width: 480px; margin: auto; }
   h1 { text-align: center; font-weight: normal; color: #333; margin-bottom: 12px; font-size: 1.5em; }
@@ -16,9 +16,6 @@
   li.taken { text-decoration: line-through; color: #777; background: #defade; }
   .name { flex: 1; cursor: pointer; word-break: break-word; }
   .actions { display: flex; gap: 4px; }
-  .editOptions { display: flex; align-items: center; gap: 6px; transition: opacity 0.3s; }
-  .hidden { opacity: 0; pointer-events: none; height: 0; overflow: hidden; }
-  .compact { width: 90%; margin: auto; }
 </style>
 </head>
 <body>
@@ -26,82 +23,93 @@
 <div class="controls">
   <input id="pillInput" type="text" placeholder="Añadir pastilla" />
   <button id="addBtn">Añadir</button>
-  <button id="confirmBtn">Confirmar edición</button>
   <button id="resetBtn">Desmarcar todas</button>
 </div>
 <ul id="pillList"></ul>
 
 <script>
-let pills = [];
-let editingConfirmed = false;
-let editingMode = false; // Para mover opciones de edición tras confirmar
+  let pills = [];
 
-const pillInput = document.getElementById('pillInput');
-const addBtn = document.getElementById('addBtn');
-const confirmBtn = document.getElementById('confirmBtn');
-const resetBtn = document.getElementById('resetBtn');
-const pillList = document.getElementById('pillList');
+  const pillInput = document.getElementById('pillInput');
+  const addBtn = document.getElementById('addBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const pillList = document.getElementById('pillList');
 
-function savePills() { localStorage.setItem('pills', JSON.stringify(pills)); }
-function loadPills() { const d = localStorage.getItem('pills'); if (d) pills = JSON.parse(d); }
-
-function renderPills() {
-  pillList.innerHTML = '';
-  pills.forEach((p, i) => {
-    const li = document.createElement('li');
-    if (p.taken) li.className = 'taken';
-    // Aquí se construye el contenido del elemento
-    const span = document.createElement('span');
-    span.className = 'name';
-    span.textContent = p.name;
-    span.onclick = () => {
-      if (!editingConfirmed) return;
-      if (!p.taken) {
-        if (confirm(`¿Confirmas que has tomado la pastilla "${p.name}"?`)) {
-          p.taken = true; savePills(); renderPills();
-        }
-      } else {
-        p.taken = false; savePills(); renderPills();
-      }
-    };
-    // Opciones de editar/borrar en modo compacto tras confirmar
-    const actionsDiv = document.createElement('div');
-    actionsDiv.className = 'actions' + (editingConfirmed ? ' hidden' : '');
-    const delBtn = document.createElement('button');
-    delBtn.innerHTML = '×';
-    delBtn.title= 'Borrar'; delBtn.onclick = () => {
-      if (!editingConfirmed) { alert('Confirma la edición para borrar.'); return; }
-      pills.splice(i,1); savePills(); renderPills();
-    };
-    actionsDiv.appendChild(delBtn);
-    // Opciones de editar en modo expandido: aquí pueden añadirse más opciones si se quieren.
-    // La opción de mover las opciones se puede agregar si se desea en modo expandido.
-
-    // Añadir a la lista
-    li.appendChild(span);
-    li.appendChild(actionsDiv);
-    pillList.appendChild(li);
-  });
-}
-
-// Funciones de botones
-document.getElementById('addBtn').onclick = () => {
-  if (editingConfirmed) { alert('No puedes añadir tras confirmar edición.'); return; }
-  const n = pillInput.value.trim();
-  if (n) { pills.push({name: n, taken: false}); pillInput.value=''; savePills(); renderPills(); }
-};
-document.getElementById('confirmBtn').onclick = () => {
-  editingConfirmed = !editingConfirmed; confirmBtn.textContent = editingConfirmed ? 'Cancelar edición' : 'Confirmar edición';
-  alert(editingConfirmed ? 'Edición confirmada.' : 'Edición cancelada.');
-};
-document.getElementById('resetBtn').onclick = () => {
-  if (!editingConfirmed) { alert('Confirma la edición primero.'); return; }
-  if (confirm('¿Quieres desmarcar todas las pastillas?')) {
-    pills.forEach(p => p.taken=false); savePills(); renderPills();
+  function savePills() {
+    localStorage.setItem('pills', JSON.stringify(pills));
   }
-};
 
-loadPills(); renderPills();
+  function loadPills() {
+    const data = localStorage.getItem('pills');
+    if (data) pills = JSON.parse(data);
+  }
+
+  function renderPills() {
+    pillList.innerHTML = '';
+    pills.forEach((p, i) => {
+      const li = document.createElement('li');
+      li.className = p.taken ? 'taken' : '';
+      
+      const span = document.createElement('span');
+      span.className = 'name';
+      span.textContent = p.name;
+      // Confirmar si la pastilla fue tomada o se va a desmarcar
+      span.onclick = () => {
+        if (!p.taken) {
+          if (confirm(`¿Confirmas que has tomado la pastilla "${p.name}"?`)) {
+            p.taken = true;
+            savePills();
+            renderPills();
+          }
+        } else {
+          if (confirm(`¿Confirmas que quieres desmarcar la pastilla "${p.name}"?`)) {
+            p.taken = false;
+            savePills();
+            renderPills();
+          }
+        }
+      };
+
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'actions';
+
+      const delBtn = document.createElement('button');
+      delBtn.innerHTML = '×';
+      delBtn.title = 'Borrar';
+      delBtn.onclick = () => {
+        pills.splice(i, 1);
+        savePills();
+        renderPills();
+      };
+
+      actionsDiv.appendChild(delBtn);
+      li.appendChild(span);
+      li.appendChild(actionsDiv);
+      pillList.appendChild(li);
+    });
+  }
+
+  addBtn.onclick = () => {
+    const name = pillInput.value.trim();
+    if (name) {
+      pills.push({ name, taken: false });
+      pillInput.value = '';
+      savePills();
+      renderPills();
+    }
+  };
+
+  resetBtn.onclick = () => {
+    if (pills.length === 0) return;
+    if (confirm('¿Quieres desmarcar todas las pastillas?')) {
+      pills.forEach(p => p.taken = false);
+      savePills();
+      renderPills();
+    }
+  };
+
+  loadPills();
+  renderPills();
 </script>
 </body>
 </html>
