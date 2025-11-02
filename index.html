@@ -77,9 +77,11 @@
       delBtn.innerHTML = '×';
       delBtn.title = 'Borrar';
       delBtn.onclick = () => {
-        pills.splice(i, 1);
-        savePills();
-        renderPills();
+        if (confirm(`¿Quieres eliminar la pastilla "${p.name}"?`)) {
+          pills.splice(i, 1);
+          savePills();
+          renderPills();
+        }
       };
 
       actionsDiv.appendChild(delBtn);
